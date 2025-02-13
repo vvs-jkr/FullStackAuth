@@ -3,11 +3,12 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { TokenType } from '@prisma/__generated__'
 import { hash } from 'argon2'
 import { v4 as uuidv4 } from 'uuid'
 
-import { MailService } from '@/libs/mail/mail.service'
+import { MailerSendService } from '@/libs/mail/mailersend/mailersend.service'
 import { PrismaService } from '@/prisma/prisma.service'
 import { UserService } from '@/user/user.service'
 
@@ -19,7 +20,8 @@ export class PasswordRecoveryService {
 	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
-		private readonly mailService: MailService
+		private readonly configService: ConfigService,
+		private readonly mailerSendService: MailerSendService
 	) {}
 
 	public async resetPassword(dto: ResetPasswordDto) {
@@ -35,10 +37,18 @@ export class PasswordRecoveryService {
 			existingUser.email
 		)
 
-		await this.mailService.sendPasswordResetEmail(
-			passwordResetToken.email,
-			passwordResetToken.token
-		)
+		const domain = this.configService.getOrThrow<string>('ALLOWED_ORIGIN')
+		const resetLink = `${domain}/reset-password?token=${passwordResetToken.token}`
+		try {
+			await this.mailerSendService.sendEmail(
+				passwordResetToken.email,
+				'Сброс пароля',
+				`<p>Для сброса пароля, перейдите по ссылке: <a href="${resetLink}">${resetLink}</a></p>`
+			)
+		} catch (error) {
+			console.error('Ошибка отправки email через MailerSend:', error)
+			throw new Error('Не удалось отправить email для сброса пароля')
+		}
 
 		return true
 	}

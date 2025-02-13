@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common'
 
-import { MailService } from '@/libs/mail/mail.service'
+import { EmailConfirmationModule } from '@/auth/email-confirmation/email-confirmation.module'
 
 import { TwoFactorAuthService } from './two-factor-auth.service'
 
 @Module({
-	providers: [TwoFactorAuthService, MailService]
+	imports: [EmailConfirmationModule],
+	providers: [TwoFactorAuthService]
 })
 export class TwoFactorAuthModule {}

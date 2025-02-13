@@ -5,11 +5,12 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { TokenType } from '@prisma/__generated__'
 import { Request } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 
-import { MailService } from '@/libs/mail/mail.service'
+import { MailerSendService } from '@/libs/mail/mailersend/mailersend.service'
 import { PrismaService } from '@/prisma/prisma.service'
 import { UserService } from '@/user/user.service'
 
@@ -21,8 +22,9 @@ import { ConfirmationDto } from './dto/confirmation.dto'
 export class EmailConfirmationService {
 	public constructor(
 		private readonly prismaService: PrismaService,
-		private readonly mailService: MailService,
 		private readonly userService: UserService,
+		private readonly configService: ConfigService,
+		private readonly mailerSendService: MailerSendService,
 		@Inject(forwardRef(() => AuthService))
 		private readonly authService: AuthService
 	) {}
@@ -81,10 +83,19 @@ export class EmailConfirmationService {
 	public async sendVerificationToken(email: string) {
 		const verificationToken = await this.generateVerificationToken(email)
 
-		await this.mailService.sendConfirmationEmail(
-			verificationToken.email,
-			verificationToken.token
-		)
+		const domain = this.configService.getOrThrow<string>('ALLOWED_ORIGIN')
+		const confirmationLink = `${domain}/auth/confirm-email?token=${verificationToken.token}`
+
+		try {
+			await this.mailerSendService.sendEmail(
+				verificationToken.email,
+				'Подтверждение почты',
+				`<p>Для подтверждения почты, перейдите по ссылке: <a href="${confirmationLink}">${confirmationLink}</a></p>`
+			)
+		} catch (error) {
+			console.error('Ошибка отправки email через MailerSend:', error)
+			throw new Error('Не удалось отправить email подтверждения')
+		}
 
 		return true
 	}

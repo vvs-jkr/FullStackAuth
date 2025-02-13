@@ -1,19 +1,20 @@
 import { MailerOptions } from '@nestjs-modules/mailer'
 import { ConfigService } from '@nestjs/config'
 
-import { isDev } from '@/libs/common/utils/is-dev.utils'
-
-
 export const getMailerConfig = async (
 	configService: ConfigService
- ): Promise<MailerOptions> => ({
+): Promise<MailerOptions> => ({
 	transport: {
-	  service: 'resend', 
-	  auth: {
-		 api_key: configService.getOrThrow<string>('RESEND_API_KEY'),
-	  },
+		host: configService.get<string>('MAILER_HOST'),
+		port: configService.get<number>('MAILER_PORT'),
+		secure: false,
+		requireTLS: true,
+		auth: {
+			user: configService.get<string>('MAILER_USER'),
+			pass: configService.get<string>('MAILER_PASS')
+		}
 	},
 	defaults: {
-	  from: '"VS Dev" <no-reply@vs-fullauth.org>', 
-	},
- });
+		from: configService.get<string>('MAILER_FROM_EMAIL')
+	}
+})

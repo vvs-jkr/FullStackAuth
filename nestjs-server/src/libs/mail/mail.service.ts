@@ -1,5 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { render } from '@react-email/components'
 
@@ -9,6 +9,8 @@ import { TwoFactorAuthTemplate } from './templates/two-factor-auth.template'
 
 @Injectable()
 export class MailService {
+	private readonly logger = new Logger(MailService.name);
+	
 	public constructor(
 		private readonly mailerService: MailerService,
 		private readonly configService: ConfigService
@@ -34,11 +36,24 @@ export class MailService {
 		return this.sendMail(email, 'Подтверждение вашей личности', html)
 	}
 
-	private sendMail(email: string, subject: string, html: string) {
-		return this.mailerService.sendMail({
-			to: email,
-			subject,
-			html
-		})
-	}
+	// private sendMail(email: string, subject: string, html: string) {
+	// 	return this.mailerService.sendMail({
+	// 		to: email,
+	// 		subject,
+	// 		html
+	// 	})
+	// }
+	private async sendMail(email: string, subject: string, html: string) {
+		try {
+		  await this.mailerService.sendMail({
+			 to: email,
+			 subject,
+			 html,
+		  });
+		  this.logger.log(`Email отправлен на ${email} с темой ${subject}`);
+		} catch (error) {
+		  this.logger.error(`Ошибка отправки email на ${email} с темой ${subject}:`, error);
+		  throw new Error(`Не удалось отправить email: ${error.message}`); 
+		}
+	 }
 }

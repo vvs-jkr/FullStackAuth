@@ -7,8 +7,8 @@ import '@/shared/styles/globals.css'
 
 export const metadata: Metadata = {
 	title: {
-		absolute: 'Курс по авторизации',
-		template: '%s | Курс по авторизации'
+		absolute: 'VS Dev',
+		template: '%s | VS Dev'
 	},
 	description:
 		'Это учебный проект, созданный для демонстрации полного цикла авторизации пользователей'

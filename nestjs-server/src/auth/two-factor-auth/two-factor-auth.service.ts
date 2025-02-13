@@ -3,16 +3,18 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { TokenType } from '@prisma/__generated__'
 
-import { MailService } from '@/libs/mail/mail.service'
+import { MailerSendService } from '@/libs/mail/mailersend/mailersend.service'
 import { PrismaService } from '@/prisma/prisma.service'
 
 @Injectable()
 export class TwoFactorAuthService {
 	public constructor(
 		private readonly prismaService: PrismaService,
-		private readonly mailService: MailService
+		private readonly configService: ConfigService,
+		private readonly mailerSendService: MailerSendService
 	) {}
 
 	public async validateTwoFactorToken(email: string, code: string) {
@@ -56,10 +58,18 @@ export class TwoFactorAuthService {
 	public async sendTwoFactorToken(email: string) {
 		const twoFactorToken = await this.generateTwoFactorToken(email)
 
-		await this.mailService.sendTwoFactorTokenEmail(
-			twoFactorToken.email,
-			twoFactorToken.token
-		)
+		try {
+			await this.mailerSendService.sendEmail(
+				twoFactorToken.email,
+				'Код двухфакторной аутентификации',
+				`<p>Ваш код двухфакторной аутентификации: <b>${twoFactorToken.token}</b></p>`
+			)
+		} catch (error) {
+			console.error('Ошибка отправки email через MailerSend:', error)
+			throw new Error(
+				'Не удалось отправить email с кодом двухфакторной аутентификации'
+			)
+		}
 
 		return true
 	}
